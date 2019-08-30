@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	url2 "net/url"
 	"sort"
 	"strings"
 )
@@ -64,6 +65,28 @@ func (c *Client) postWithoutCert(url string, params Params) (string, error) {
 	h := &http.Client{}
 	p := c.fillRequestData(params)
 	response, err := h.Post(url, bodyType, strings.NewReader(MapToXml(p)))
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	res, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
+}
+
+// https no cert post
+func (c *Client) postWithoutCertByProxy(original_url string, params Params, proxy_url string) (string, error) {
+
+	//服务代理
+	proxyUri, _ := url2.Parse(proxy_url)
+	proxy := http.ProxyURL(proxyUri)
+	tr := &http.Transport{Proxy: proxy}
+
+	h := &http.Client{Transport: tr}
+	p := c.fillRequestData(params)
+	response, err := h.Post(original_url, bodyType, strings.NewReader(MapToXml(p)))
 	if err != nil {
 		return "", err
 	}
@@ -205,6 +228,21 @@ func (c *Client) UnifiedOrder(params Params) (Params, error) {
 	return c.processResponseXml(xmlStr)
 }
 
+// 统一下单(通过代理)
+func (c *Client) UnifiedOrderByProxy(params Params, proxy_url string) (Params, error) {
+	var url string
+	if c.account.isSandbox {
+		url = SandboxUnifiedOrderUrl
+	} else {
+		url = UnifiedOrderUrl
+	}
+	xmlStr, err := c.postWithoutCertByProxy(url, params, proxy_url)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXml(xmlStr)
+}
+
 // 刷卡支付
 func (c *Client) MicroPay(params Params) (Params, error) {
 	var url string
@@ -244,6 +282,21 @@ func (c *Client) OrderQuery(params Params) (Params, error) {
 		url = OrderQueryUrl
 	}
 	xmlStr, err := c.postWithoutCert(url, params)
+	if err != nil {
+		return nil, err
+	}
+	return c.processResponseXml(xmlStr)
+}
+
+// 订单查询(通过代理)
+func (c *Client) OrderQueryByProxy(params Params, proxy_url string) (Params, error) {
+	var url string
+	if c.account.isSandbox {
+		url = SandboxOrderQueryUrl
+	} else {
+		url = OrderQueryUrl
+	}
+	xmlStr, err := c.postWithoutCertByProxy(url, params, proxy_url)
 	if err != nil {
 		return nil, err
 	}
