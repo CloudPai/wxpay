@@ -229,7 +229,11 @@ func (c *Client) UnifiedOrder(params Params) (Params, error) {
 }
 
 // 统一下单(通过代理)
-func (c *Client) UnifiedOrderByProxy(params Params, proxy_url string) (Params, error) {
+func (c *Client) UnifiedOrderByProxy(params Params, proxy_flag bool, proxy_url string) (Params, error) {
+
+	if proxy_flag == false {
+		return c.UnifiedOrder(params)
+	}
 	var url string
 	if c.account.isSandbox {
 		url = SandboxUnifiedOrderUrl
@@ -289,7 +293,10 @@ func (c *Client) OrderQuery(params Params) (Params, error) {
 }
 
 // 订单查询(通过代理)
-func (c *Client) OrderQueryByProxy(params Params, proxy_url string) (Params, error) {
+func (c *Client) OrderQueryByProxy(params Params, proxy_flag bool, proxy_url string) (Params, error) {
+	if proxy_flag == false {
+		return c.OrderQuery(params)
+	}
 	var url string
 	if c.account.isSandbox {
 		url = SandboxOrderQueryUrl
